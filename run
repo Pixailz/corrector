@@ -20,11 +20,15 @@ function	get::src_makefile()
 	begin_cursor="${begin_cursor/:*/}"
 	end_cursor=$((${begin_cursor} + $(wc -l <<<${from_replace}) - 1))
 
-	sed -i "${begin_cursor},${end_cursor}d" ${SRC_MAKE}
+	if [ "${begin_cursor}" -eq "${end_cursor}" ]; then
+		sed -i "${begin_cursor}d" ${SRC_MAKE}
+	else
+		sed -i "${begin_cursor},${end_cursor}d" ${SRC_MAKE}
+	fi
 
 	to_replace=($(
 		for item in $(find ${src_dir} -type f -name "*.c" | sort); do
-			echo ${item/${SRC_DIR}\/${part}\//}
+			echo ${item/${SRC_DIR}\//}
 		done)
 	)
 
@@ -48,10 +52,7 @@ function	get::src_makefile()
 		sed -i "s|^${item}|${padding_line}   ${item} \\\\|" ${SRC_MAKE}
 		((begin_cursor++))
 	done
-	((begin_cursor--))
-	sed -i "${begin_cursor}d" ${SRC_MAKE}
-	sed -i "${begin_cursor}i ${item}" ${SRC_MAKE}
-	sed -i "s|^${item}|${padding_line}   ${item}|" ${SRC_MAKE}
+	sed -i "s|${to_replace[@]: -1} \\\\|${to_replace[@]: -1}|" ${SRC_MAKE}
 }
 
 function	update::src()
@@ -70,10 +71,18 @@ function	corrector::entry()
 DIR_BASE="${PWD}"
 
 SRC_MAKE="${DIR_BASE}/${MK_DIR}/srcs.mk"
-SRC_TARGET_BASE="SRC_C"
+SRC_TARGET_BASE="SRC"
 declare -A SRC_TARGET=(
-	["bonus"]="bonus"
-	["mandatory"]="mandatory"
+	["int"]="integer"
+	["str"]="string"
+	["mem"]="memory"
+	["chk"]="check"
+	["lst"]="print"
+	["prt"]="list"
+	["inp"]="input"
+	["rdm"]="random"
+	["lnx"]="linux"
+	["net_ipv4"]="network/ipv4"
 )
 
 corrector::entry
