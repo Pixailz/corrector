@@ -6,10 +6,12 @@ function	get::src_makefile()
 {
 	local	part="${1:-}"
 	local	var_name="${SRC_TARGET_BASE}_${part^^}"
+	local	src_dir="${SRC_DIR}/${2:-}"
 	local	begin_cursor
 	local	end_cursor
 	local	from_replace
 	local	to_replace
+	local	first_line
 
 	from_replace=$(
 		perl -0777 -nE "print if s|.*^(${var_name}\s*:=\s.*?\.c\n).*|\1|smg" ${SRC_MAKE}
@@ -21,7 +23,7 @@ function	get::src_makefile()
 	sed -i "${begin_cursor},${end_cursor}d" ${SRC_MAKE}
 
 	to_replace=($(
-		for item in $(find ${SRC_DIR}/${part} -type f -name "*.c" | sort); do
+		for item in $(find ${src_dir} -type f -name "*.c" | sort); do
 			echo ${item/${SRC_DIR}\/${part}\//}
 		done)
 	)
@@ -54,8 +56,8 @@ function	get::src_makefile()
 
 function	update::src()
 {
-	for part in ${SRC_PARTS[@]}; do
-		get::src_makefile "${part}"
+	for part in ${!SRC_TARGET[@]}; do
+		get::src_makefile "${part}" "${SRC_TARGET[${part}]}"
 	done
 }
 
@@ -68,7 +70,10 @@ function	corrector::entry()
 DIR_BASE="${PWD}"
 
 SRC_MAKE="${DIR_BASE}/${MK_DIR}/srcs.mk"
-SRC_PARTS=(${SRC_PARTS})
 SRC_TARGET_BASE="SRC_C"
+declare -A SRC_TARGET=(
+	["bonus"]="bonus"
+	["mandatory"]="mandatory"
+)
 
 corrector::entry
