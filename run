@@ -1,0 +1,74 @@
+#!/bin/bash
+
+[ "${DEBUG:-0}" -eq 1 ] && set -x
+
+function	get::src_makefile()
+{
+	local	part="${1:-}"
+	local	var_name="${SRC_TARGET_BASE}_${part^^}"
+	local	begin_cursor
+	local	end_cursor
+	local	from_replace
+	local	to_replace
+
+	from_replace=$(
+		perl -0777 -nE "print if s|.*^(${var_name}\s*:=\s.*?\.c\n).*|\1|smg" ${SRC_MAKE}
+	)
+	begin_cursor=$(grep -nE "^${var_name}\s*:=" ${SRC_MAKE})
+	begin_cursor="${begin_cursor/:*/}"
+	end_cursor=$((${begin_cursor} + $(wc -l <<<${from_replace}) - 1))
+
+	sed -i "${begin_cursor},${end_cursor}d" ${SRC_MAKE}
+
+	to_replace=($(
+		for item in $(find ${SRC_DIR}/${part} -type f -name "*.c" | sort); do
+			echo ${item/${SRC_DIR}\/${part}\//}
+		done)
+	)
+
+	if [ $((${#var_name} % 4)) -eq 0 ]; then
+		var_name="${var_name}"$'\t'
+	fi
+
+	case $((${#var_name} % 4)) in
+		0) padding=""	;;	1) padding="   ";;
+		2) padding="  "	;;	3) padding=" "	;;
+	esac
+
+	first_line="${var_name}${padding}:= "
+	padding_line=$(printf -- $'\t''%.0s' $(seq 1 $((${#first_line} / 4))))
+
+	sed -i "${begin_cursor}i ${first_line}${to_replace[0]} \\\\"$'\n' ${SRC_MAKE}
+	((begin_cursor++))
+
+	for item in ${to_replace[@]:1}; do
+		sed -i "${begin_cursor}i ${item}" ${SRC_MAKE}
+		sed -i "s|^${item}|${padding_line}   ${item} \\\\|" ${SRC_MAKE}
+		((begin_cursor++))
+	done
+	((begin_cursor--))
+	sed -i "${begin_cursor}d" ${SRC_MAKE}
+	sed -i "${begin_cursor}i ${item}" ${SRC_MAKE}
+	sed -i "s|^${item}|${padding_line}   ${item}|" ${SRC_MAKE}
+}
+
+function	update::src()
+{
+	for part in ${SRC_PARTS[@]}; do
+		get::src_makefile "${part}"
+	done
+}
+
+function	corrector::entry()
+{
+	update::src
+}
+
+## CONFIG
+DIR_BASE="${PWD}"
+
+SRC_MAKE="${DIR_BASE}/${MK_DIR}/srcs.mk"
+SRC_PARTS=(${SRC_PARTS})
+SRC_TARGET_BASE="SRC_C"
+
+corrector::entry
