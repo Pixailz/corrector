@@ -20,7 +20,11 @@ function	get::src_makefile()
 	begin_cursor="${begin_cursor/:*/}"
 	end_cursor=$((${begin_cursor} + $(wc -l <<<${from_replace}) - 1))
 
-	sed -i "${begin_cursor},${end_cursor}d" ${SRC_MAKE}
+	if [ "${begin_cursor}" -eq "${end_cursor}" ]; then
+		sed -i "${begin_cursor}d" ${SRC_MAKE}
+	else
+		sed -i "${begin_cursor},${end_cursor}d" ${SRC_MAKE}
+	fi
 
 	to_replace=($(
 		for item in $(find ${src_dir} -type f -name "*.c" | sort); do
@@ -48,10 +52,7 @@ function	get::src_makefile()
 		sed -i "s|^${item}|${padding_line}   ${item} \\\\|" ${SRC_MAKE}
 		((begin_cursor++))
 	done
-	((begin_cursor--))
-	sed -i "${begin_cursor}d" ${SRC_MAKE}
-	sed -i "${begin_cursor}i ${item}" ${SRC_MAKE}
-	sed -i "s|^${item}|${padding_line}   ${item}|" ${SRC_MAKE}
+	sed -i "s|${to_replace[@]: -1} \\\\|${to_replace[@]: -1}|" ${SRC_MAKE}
 }
 
 function	update::src()
