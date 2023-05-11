@@ -28,7 +28,7 @@ function	get::src_makefile()
 
 	to_replace=($(
 		for item in $(find ${src_dir} -type f -name "*.c" | sort); do
-			echo ${item/${SRC_DIR}\/${part}\//}
+			echo ${item/${SRC_DIR}\//}
 		done)
 	)
 
@@ -73,8 +73,7 @@ DIR_BASE="${PWD}"
 SRC_MAKE="${DIR_BASE}/${MK_DIR}/srcs.mk"
 SRC_TARGET_BASE="SRC_C"
 declare -A SRC_TARGET=(
-	["bonus"]="bonus"
-	["mandatory"]="mandatory"
+	["mandatory"]=""
 )
 
 corrector::entry
